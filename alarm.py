@@ -1,15 +1,41 @@
 #!/usr/bin/python3
 
 from scapy.all import *
+from ipwhois import IPWhois
 import pcapy
 import argparse
 
 def packetcallback(packet):
   try:
+    scans(packet)
+    findcredentials(packet)
     if packet[TCP].dport == 80:
       print("HTTP (web) traffic detected!")
   except:
     pass
+
+
+def findip(packet):
+  try:
+    res = IPWhois(ip).lookup_whois()
+    if res.country == Russia
+    print(res)
+  except Exception as e:
+    print(e)
+
+def findcredentials(packet):
+
+
+def scans(packet):
+  chkscan = packet[TCP].flags
+  if chkscan & NULL:
+    print("NULL scan detected")
+  if chkscan & FIN:
+    print("FIN scan detected")
+  if  chkscan & XMAS:
+    print("XMAS scan detected")
+
+
 
 parser = argparse.ArgumentParser(description='A network sniffer that identifies basic vulnerabilities')
 parser.add_argument('-i', dest='interface', help='Network interface to sniff on', default='eth0')
@@ -28,4 +54,5 @@ else:
   except pcapy.PcapError:
     print("Sorry, error opening network interface %(interface)s. It does not exist." % {"interface" : args.interface})
   except:
-    print("Sorry, can\'t read network traffic. Are you root?")
+    print("Sorry, can't read network traffic. Are you root?")
+
