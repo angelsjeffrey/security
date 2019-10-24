@@ -7,18 +7,8 @@ import argparse
 
 alert_num = 0
 
-def packetcallback(packet):
-  try:
-    scans(packet)
-    findcredentials(packet)
-    findip(packet)
-  #  if packet[TCP].dport == 80:
-   #   print("HTTP (web) traffic detected!")
-  except:
-    pass
-
-
 def findip(packet):
+  print("finding")
   try:
     ipaddr = packet[IP].src
     res = IPWhois(ipaddr).lookup_whois()
@@ -29,6 +19,7 @@ def findip(packet):
     print(e)
 
 def findcredentials(packet):
+  print("cred")
   data = packet[Raw].load
   if 'USER' in data:
     username = data.split('USER ')[1].strip()
@@ -39,6 +30,7 @@ def findcredentials(packet):
 
 
 def scans(packet):
+  print("scanning")
   ipaddr = packet[IP].src
   chkscan = packet[TCP].flags
   chknikto = packet[Raw].load
@@ -55,7 +47,16 @@ def scans(packet):
     alert_num += 1
     print("Alert #", alert_num, " Nikto scan is detected from ", ipaddr, " (TCP!)")
 
-
+def callfxns(packet):
+    scans(packet)
+    findcredentials(packet)
+    findip(packet)
+  
+def packetcallback(packet):
+  try:
+    callfxns(packet)
+  except:
+    pass
 
 parser = argparse.ArgumentParser(description='A network sniffer that identifies basic vulnerabilities')
 parser.add_argument('-i', dest='interface', help='Network interface to sniff on', default='eth0')
