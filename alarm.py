@@ -5,35 +5,55 @@ from ipwhois import IPWhois
 import pcapy
 import argparse
 
+alert_num = 0
+
 def packetcallback(packet):
   try:
     scans(packet)
     findcredentials(packet)
-    if packet[TCP].dport == 80:
-      print("HTTP (web) traffic detected!")
+    findip(packet)
+  #  if packet[TCP].dport == 80:
+   #   print("HTTP (web) traffic detected!")
   except:
     pass
 
 
 def findip(packet):
   try:
-    res = IPWhois(ip).lookup_whois()
-    if res.country == Russia
-    print(res)
+    ipaddr = packet[IP].src
+    res = IPWhois(ipaddr).lookup_whois()
+    if res['country'] == "Russia":
+      alert_num += 1
+      print("Alert #", alert_num, ": Russian ip is detected from ", ipaddr)
   except Exception as e:
     print(e)
 
 def findcredentials(packet):
+  data = packet[Raw].load
+  if 'USER' in data:
+    username = data.split('USER ')[1].strip()
+  if 'PASS' in data:
+    password = data.split('PASS ')[1].strip()
+  alert_num += 1
+  print("Alert #", alert_num, ": Usernames and passwords sent in-the-clear (HTTP) (username:", username, " password:", password, ")")   
 
 
 def scans(packet):
+  ipaddr = packet[IP].src
   chkscan = packet[TCP].flags
-  if chkscan & NULL:
-    print("NULL scan detected")
-  if chkscan & FIN:
-    print("FIN scan detected")
-  if  chkscan & XMAS:
-    print("XMAS scan detected")
+  chknikto = packet[Raw].load
+  if (chkscan & 0x1) and (chkscan & 0x8) and (chkscan & 0x20):
+    alert_num += 1
+    print("Alert #", alert_num, " Xmas scan is detected from ", ipaddr, " (TCP!)")
+  elif chkscan & 0x0:
+    alert_num += 1
+    print("Alert #", alert_num, " NULL scan is detected from ", ipaddr, " (TCP!)")
+  elif chkscan & 0x1:
+    alert_num += 1
+    print("Alert #", alert_num, " FIN scan is detected from ", ipaddr, " (TCP!)")
+  elif nikto in chknikto:
+    alert_num += 1
+    print("Alert #", alert_num, " Nikto scan is detected from ", ipaddr, " (TCP!)")
 
 
 
