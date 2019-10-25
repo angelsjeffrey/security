@@ -7,8 +7,36 @@ import argparse
 
 alert_num = 0
 
+def scans(packet):
+  ipaddr = packet[IP].src
+  chkscan = packet[TCP].flags
+  chknikto = packet[Raw].payload
+  if (chkscan & 0):
+    alert_num += 1
+    print("Alert #", alert_num, " NULL scan is detected from ", ipaddr, " (TCP!)")
+  elif chkscan & 1:
+    alert_num += 1
+    print("Alert #", alert_num, " FIN scan is detected from ", ipaddr, " (TCP!)")
+  elif chkscan & "FPU":
+    alert_num += 1
+    print("Alert #", alert_num, " FIN scan is detected from ", ipaddr, " (TCP!)")
+  for link in chknikto:
+    if nikto in line:
+      alert_num += 1
+      print("Alert #", alert_num, " Nikto scan is detected from ", ipaddr, " (HTTP!)")
+
+
+def findcredentials(packet):
+  data = packet[Raw].load
+  for line in data:
+    if 'USER' in line:
+      username = data.split('USER ')[1].strip()
+      password = data.split('PASS ')[1].strip()
+      alert_num += 1
+      print("Alert #", alert_num, ": Usernames and passwords sent in-the-clear (HTTP) (username:", username, " password:", password, ")")   
+
+
 def findip(packet):
-  print("finding")
   try:
     ipaddr = packet[IP].src
     res = IPWhois(ipaddr).lookup_whois()
@@ -18,45 +46,15 @@ def findip(packet):
   except Exception as e:
     print(e)
 
-def findcredentials(packet):
-  print("cred")
-  data = packet[Raw].load
-  if 'USER' in data:
-    username = data.split('USER ')[1].strip()
-  if 'PASS' in data:
-    password = data.split('PASS ')[1].strip()
-  alert_num += 1
-  print("Alert #", alert_num, ": Usernames and passwords sent in-the-clear (HTTP) (username:", username, " password:", password, ")")   
 
-
-def scans(packet):
-  print("scanning")
-  ipaddr = packet[IP].src
-  chkscan = packet[TCP].flags
-  chknikto = packet[Raw].load
-  if (chkscan & 0x1) and (chkscan & 0x8) and (chkscan & 0x20):
-    alert_num += 1
-    print("Alert #", alert_num, " Xmas scan is detected from ", ipaddr, " (TCP!)")
-  elif chkscan & 0x0:
-    alert_num += 1
-    print("Alert #", alert_num, " NULL scan is detected from ", ipaddr, " (TCP!)")
-  elif chkscan & 0x1:
-    alert_num += 1
-    print("Alert #", alert_num, " FIN scan is detected from ", ipaddr, " (TCP!)")
-  elif nikto in chknikto:
-    alert_num += 1
-    print("Alert #", alert_num, " Nikto scan is detected from ", ipaddr, " (TCP!)")
-
-def callfxns(packet):
+def packetcallback(packet):
+  try:
     scans(packet)
     findcredentials(packet)
     findip(packet)
-  
-def packetcallback(packet):
-  try:
-    callfxns(packet)
   except:
     pass
+
 
 parser = argparse.ArgumentParser(description='A network sniffer that identifies basic vulnerabilities')
 parser.add_argument('-i', dest='interface', help='Network interface to sniff on', default='eth0')
